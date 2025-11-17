@@ -157,6 +157,26 @@ BigBinary Multiplication(BigBinary a,int n){
     return res;
 }
 
+BigBinary minBB(BigBinary a, BigBinary b){
+    if (Inferieur(a,b)) return a;
+    return b;
+}
+
+BigBinary maxBB(BigBinary a,BigBinary b){
+    if (Inferieur(a,b))return b;
+    return a;
+}
+
+BigBinary PGCD(BigBinary a,BigBinary b){
+    BigBinary u=maxBB(a,b);
+    BigBinary v=minBB(a,b);
+    while (!Egal(u,v)){
+        if(Inferieur(v,u))u=Soustraction(u,v);
+        else v=Soustraction(v,u);
+    }
+    return u;
+}
+
 int main () {
     // Création des BigBinary à partir de chaînes binaires
     // 83 = 1010011
