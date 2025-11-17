@@ -177,6 +177,29 @@ BigBinary PGCD(BigBinary a,BigBinary b){
     return u;
 }
 
+int puissance(int a,int b){// pas pour les BB
+    for (int i=0;i<b;i++) a+=a;
+    return a;
+}
+
+int BBtoInt(BigBinary a){
+    int res=0;
+    for (int i=a.Taille-1;i>0;i--){
+        if(a.Tdigits[i]==1)res+=puissance(2,a.Taille-i);
+    }
+    return res;
+}
+
+BigBinary Modulo(BigBinary a,BigBinary b){
+    //a et b positif
+    if (Egal(a,b)) return initBigBinary(0,0);
+    if (!Inferieur(a,b))return Modulo(Soustraction(a,b),b);
+    BigBinary p = PGCD(a,b);
+    if (!Inferieur(a,Multiplication(b,2)))return Modulo(Soustraction(a,Multiplication(b,2)),b);
+    if (!Inferieur(a,Multiplication(b,3)))return Modulo(Soustraction(a,Multiplication(b,3)),b);
+    if (Inferieur(a,b))return a;
+}
+
 int main () {
     // Création des BigBinary à partir de chaînes binaires
     // 83 = 1010011
