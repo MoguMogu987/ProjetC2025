@@ -200,6 +200,18 @@ BigBinary Modulo(BigBinary a,BigBinary b){
     if (Inferieur(a,b))return a;
 }
 
+BigBinary MultiplicationEgyptienne(BigBinary a,BigBinary b){
+    BigBinary somme = initBigBinary(a.Taille,0);
+    BigBinary tmp = a;
+    for (int i=a.Taille-1;i>0;i++){
+        if (b.Tdigits[i]==1){
+            Addition(somme,tmp);
+        }
+        Multiplication(tmp,2);
+    }
+    return somme;
+}
+
 int main () {
     // Création des BigBinary à partir de chaînes binaires
     // 83 = 1010011
