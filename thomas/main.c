@@ -5,58 +5,75 @@
 
 #define BASE 2
 
-typedef struct {
-    int * Tdigits ; // Tableau de bits : Tdigits [0] = bit de poids fort ,Tdigits [ Taille - 1] = bit de poids faible
-    int Taille ; // Nombre de bits significatifs
-    int Signe ; // +1 pour positif , -1 pour n é gatif , 0 pour nul
-} BigBinary ;
+typedef struct{
+    int *Tdigits;
+    int Taille;
+    int Signe;
+} BigBinary;
 
-BigBinary createBigBinary ( int size ) {
-    BigBinary bb ;
-    bb.Tdigits = malloc ( sizeof (int) * size ) ;
-    bb.Taille = size ;
-    bb.Signe = 0; // Par d é faut nul
-    return bb ;
+BigBinary createBigBinary(int size){
+    BigBinary bb;
+    bb.Tdigits=malloc(sizeof(int)*size);
+    bb.Taille=size;
+    bb.Signe=0;
+    return bb;
 }
 
-BigBinary initBigBinary ( int taille , int signe ) {
-    BigBinary nb ;
-    nb.Taille = taille ;
-    nb.Signe = signe ;
-    nb.Tdigits = malloc ( sizeof (int) * taille ) ;
-    for (int i = 0; i < taille ; ++ i ) {
-        nb . Tdigits [ i ] = 0;
+BigBinary initBigBinary (int taille,int signe){
+    BigBinary nb;
+    nb.Taille=taille;
+    nb.Signe=signe;
+    nb.Tdigits=malloc(sizeof(int)*taille);
+    for (int i=0;i<taille;i++){
+        nb.Tdigits[i]=0;
     }
     return nb;
 }
 
-void afficheBigBinary ( BigBinary nb ) {
-    if ( nb.Signe == -1) printf ( " -" ) ;
-    if ( nb.Signe == 0 || nb . Taille == 0) {
-        printf ( " 0\n " ) ;
-        return ;
+void afficheBigBinary(BigBinary nb){
+    if (nb.Signe==-1) printf("-") ;
+    if (nb.Signe==0||nb.Taille==0) {
+        printf("0\n");
+        return;
     }
-    for (int i = 0; i < nb . Taille ; ++ i ) {
-        printf ( " % d " , nb . Tdigits [ i ]) ;
+    for (int i=0;i < nb.Taille;i++){
+        printf("%d",nb.Tdigits[i]);
     }
-    printf ( " \n " ) ;
+    printf("\n");
 }
 
-void libereBigBinary ( BigBinary * nb ) {
-    free ( nb -> Tdigits ) ;
-    nb -> Tdigits = NULL ;
-    nb -> Taille = 0;
-    nb -> Signe = 0;
+void libereBigBinary(BigBinary *nb){
+    free(nb->Tdigits);
+    nb->Tdigits=NULL;
+    nb->Taille=0;
+    nb->Signe=0;
 }
 
-BigBinary setBB(int liste[]){
-    int taille = sizeof(liste)/sizeof(liste[0]) ;
-
-    BigBinary nb = initBigBinary(taille ,+1);
-    for (int i = 0; i < taille ; ++ i ) {
-    nb.Tdigits[i] = liste[i];
+BigBinary setBB(int a){
+    if (a==0) return initBigBinary(1,0);
+    int temp=abs(a);
+    int t=0;
+    while (temp!=0) {
+        t+=1;
+        temp/=2;
     }
-    return nb;
+
+    BigBinary A = createBigBinary(t);
+    if (a == 0) {
+        return A;
+    }
+    if (a < 0) {
+        A.Signe = -1;
+    } else {
+        A.Signe = 1;
+    }
+
+    temp = abs(a);
+    while (t >= 0) {
+        A.Tdigits[--t] = temp%2;
+        temp /= 2;
+    }
+    return A;
 }
 
 void normalizeBB(BigBinary *bb){
@@ -97,41 +114,83 @@ void normalizeBB(BigBinary *bb){
     }
 }
 
-BigBinary Addition(BigBinary a,BigBinary b){
-    int taille;
-    if(a.Taille>b.Taille)taille=a.Taille;
-    else taille=b.Taille;
-    BigBinary res=createBigBinary(taille+1);
-    int r=0; //retenu
-
-    for (int i=taille;i>=0;i--){
-        if (a.Tdigits[i]==0 && b.Tdigits[i]==0){
-            res.Tdigits[i]=r;
-            r=0;
-        } else if (a.Tdigits[i]==1 && b.Tdigits[i]==1){
-            res.Tdigits[i]=r;
-            r=1;
-        } else if (a.Tdigits[i]==1 || b.Tdigits[i]==1){
-            if(r==1){
-                res.Tdigits[i]=0;
-            } else {
-                res.Tdigits[i]=1;
-            }
-        } else res.Tdigits[i]=0;
+BigBinary Addition(BigBinary a, BigBinary b) {      // Différents cas de base
+    if (a.Taille<b.Taille) {                // Assure que a est plus grand que b
+        return Addition(b,a);
     }
-    if (res.Tdigits[0]>0) res.Signe=1;
-    else if (res.Tdigits[0]<0) res.Signe=-1;
-    else res.Signe=0;
-
-    normalizeBB(&res);
-    return res;
+    if (a.Signe == 0) {
+        return b;
+    }
+    if (b.Signe == 0) {
+        return a;
+    }
+    BigBinary s;
+    s = createBigBinary(a.Taille+1);
+    s.Signe = 1;
+    int sui = 0;        // Garde en mémoire l'incrément (de l'étape suivante) et la valeur à ajouter
+    int i = 1;
+    while (i<=b.Taille) {
+        sui = sui+a.Tdigits[a.Taille-i]+b.Tdigits[b.Taille-i];
+        s.Tdigits[s.Taille-i] = sui%2;
+        sui /= 2;
+        i++;
+    }
+    while (sui!= 0 && i<=a.Taille) {
+        sui = sui+a.Tdigits[a.Taille-i];
+        s.Tdigits[s.Taille-i] = sui%2;
+        sui /= 2;
+        i++;
+    }
+    while (i <= a.Taille) {
+        s.Tdigits[s.Taille-i]=a.Tdigits[a.Taille-i];
+        i++;
+    }
+    if (sui != 0) {
+        s.Tdigits[s.Taille-i] = sui;
+    }
+    normalizeBB(&s);
+    return s;
 }
 
-BigBinary Soustraction(BigBinary a,BigBinary b){
-    if(b.Signe!=0 && b.Tdigits[0]==1) b.Tdigits[0]=0;
-    else if(b.Signe!=0 && b.Tdigits[0]==0) b.Tdigits[0]=1;
-    b.Signe==b.Signe*-1;
-    return Addition(a,b);// a-b == a+(-b)
+BigBinary Soustraction(BigBinary a, BigBinary b) {
+    if (b.Signe == 0) {
+        return a;
+    }
+    BigBinary s;
+    s = createBigBinary(a.Taille);
+    s.Signe = 1;
+    int sui = 0;        // Garde en mémoire l'incrément (de l'étape suivante) et la valeur à ajouter
+    int i = 1;
+    while (i<=b.Taille) {
+        sui = a.Tdigits[a.Taille-i]-b.Tdigits[b.Taille-i]-sui;
+        if (sui < 0) {
+            s.Tdigits[s.Taille-i] = 1;
+            sui = 1;
+        }
+        else {
+            s.Tdigits[s.Taille-i] = sui;
+            sui = 0;
+        }
+        i++;
+    }
+    while (sui!= 0 && i<=a.Taille) {
+        sui = a.Tdigits[a.Taille-i]-sui;
+        if (sui < 0) {
+            s.Tdigits[s.Taille-i] = 1;
+            sui = 1;
+        }
+        else {
+            s.Tdigits[s.Taille-i] = sui;
+            sui = 0;
+        }
+        i++;
+    }
+    while (i <= a.Taille) {
+        s.Tdigits[s.Taille-i]=a.Tdigits[a.Taille-i];
+        i++;
+    }
+    normalizeBB(&s);
+    return s;
 }
 
 bool Egal(BigBinary a,BigBinary b){
@@ -212,74 +271,257 @@ BigBinary MultiplicationEgyptienne(BigBinary a,BigBinary b){
     return somme;
 }
 
-int main () {
-    // Création des BigBinary à partir de chaînes binaires
-    // 83 = 1010011
-    int a[]={1,0,1,0,0,1,1};
-    BigBinary A = setBB(a);
-    // 57 = 111001
-    int b[]={1,1,1,0,0,1};
-    BigBinary B = setBB(b);;
-    // 26 = 11010
-    int c[]={1,1,0,1,0};
-    BigBinary C = setBB(c);;
-    // 83 = 1010011
-    int d[]={1,0,1,0,0,1,1};
-    BigBinary D = setBB(d);;
-    // 0
-    int z[]={0};
-    BigBinary Z = setBB(z);;
-    // 140 = 10001100
-    int e[]={1,0,0,0,1,1,0,0};
-    BigBinary E = setBB(e);;
+//fonction de test
+void testAfficheBigBinary(){
+    BigBinary A = setBB(83);
+    BigBinary B = setBB(57);
+    BigBinary C = setBB(26);
+    BigBinary D = setBB(83);
+    BigBinary Z = setBB(0);
+    BigBinary E = setBB(140);
+    BigBinary N = setBB(-13);
+    BigBinary M = setBB(100);
 
-    printf("--- Phase 1: Opérations de Base ---\n\n");
-    
-    // 1. Tests de Comparaison
-    printf("1. Tests de Comparaison:\n");
-    printf("A (83) : "); afficheBigBinary(A);
-    printf("B (57) : "); afficheBigBinary(B);
-    printf("C (26) : "); afficheBigBinary(C);
-    printf("D (83) : "); afficheBigBinary(D);
+    printf("A (83) : "); printf("(1010011)" );afficheBigBinary(A);
+    printf("B (57) : "); printf("(111001)" );afficheBigBinary(B);
+    printf("C (26) : "); printf("(11010)" );afficheBigBinary(C);
+    printf("D (83) : "); printf("(1010011)" );afficheBigBinary(D);
+    printf("Z (0) : "); printf("(0)" );afficheBigBinary(Z);
+    printf("E (140) : "); printf("(10001100)" );afficheBigBinary(E);
+    printf("N (-13) : "); printf("(-1101)" );afficheBigBinary(N);
+    printf("M (100) : "); printf("(1100100)" );afficheBigBinary(M);
+
+    libereBigBinary(&A);
+    libereBigBinary(&B);
+    libereBigBinary(&C);
+    libereBigBinary(&D);
+    libereBigBinary(&N);
+    libereBigBinary(&M);
+    libereBigBinary(&Z);
+    libereBigBinary(&E);
+}
+
+void testEgalInf(){
+    BigBinary A = setBB(83);
+    BigBinary B = setBB(57);
+    BigBinary C = setBB(26);
+    BigBinary D = setBB(83);
+    BigBinary Z = setBB(0);
+    BigBinary E = setBB(140);
+    BigBinary N = setBB(-13);
+    BigBinary M = setBB(100);
 
     printf("Egal(A, D) (83 == 83) : %s\n", Egal(A, D) ? "true" : "false"); // true
     printf("Egal(A, B) (83 == 57) : %s\n", Egal(A, B) ? "true" : "false"); // false
     printf("Inferieur(B, A) (57 < 83) : %s\n", Inferieur(B, A) ? "true" : "false"); // true
     printf("Inferieur(A, D) (83 < 83) : %s\n", Inferieur(A, D) ? "true" : "false"); // false
     printf("Inferieur(Z, A) (0 < 83) : %s\n", Inferieur(Z, A) ? "true" : "false"); // true
-    
-    // 2. Test d'Addition (A + B)
-    printf("\n2. Test d'Addition (A + B):\n");
-    // A (83) + B (57) = 140 (10001100)
-    BigBinary Sum = Addition(A, B);
-    printf("A + B (83 + 57 = 140): "); afficheBigBinary(Sum); // 10001100
-    libereBigBinary(&Sum);
+    printf("Inferieur(N, A) (-13 < 83) : %s\n", Inferieur(N, A) ? "true" : "false"); // true
 
-    // Test d'Addition avec retenue
-    // A (83) + D (83) = 166 (10100110)
-    BigBinary Sum2 = Addition(A, D);
-    printf("A + D (83 + 83 = 166): "); afficheBigBinary(Sum2); // 10100110
-    libereBigBinary(&Sum2);
-
-    // 3. Test de Soustraction (A - B)
-    printf("\n3. Test de Soustraction (A - B):\n");
-    // A (83) - B (57) = 26 (11010)
-    BigBinary Diff = Soustraction(A, B);
-    printf("A - B (83 - 57 = 26): "); afficheBigBinary(Diff); // 11010
-    libereBigBinary(&Diff);
-
-    // Test de Soustraction (A - A)
-    BigBinary Diff2 = Soustraction(A, D);
-    printf("A - D (83 - 83 = 0): "); afficheBigBinary(Diff2); // 0
-    libereBigBinary(&Diff2);
-
-    // Libération de la mémoire
     libereBigBinary(&A);
     libereBigBinary(&B);
     libereBigBinary(&C);
     libereBigBinary(&D);
+    libereBigBinary(&N);
+    libereBigBinary(&M);
     libereBigBinary(&Z);
     libereBigBinary(&E);
+}
+
+void testAddSub(){
+    BigBinary A = setBB(83);
+    BigBinary B = setBB(57);
+    BigBinary C = setBB(26);
+    BigBinary D = setBB(83);
+    BigBinary Z = setBB(0);
+    BigBinary E = setBB(140);
+    BigBinary N = setBB(-13);
+    BigBinary M = setBB(100);
+
+    BigBinary Sum = Addition(A, B);
+    printf("A + B (83 + 57 = 140): "); printf("(10001100) "); afficheBigBinary(Sum);
+    libereBigBinary(&Sum);
+
+    BigBinary Sum2 = Addition(A, D);
+    printf("A + D (83 + 83 = 166): "); printf("(10100110) ");afficheBigBinary(Sum2);
+    libereBigBinary(&Sum2);
+
+    BigBinary Diff = Soustraction(A, B);
+    printf("A - B (83 - 57 = 26): ");printf("(11010) ");afficheBigBinary(Diff);
+    libereBigBinary(&Diff);
+
+    BigBinary Diff2 = Soustraction(A, D);
+    printf("A - D (83 - 83 = 0): ");printf("(0) "); afficheBigBinary(Diff2); // 0
+    libereBigBinary(&Diff2);
+
+    libereBigBinary(&A);
+    libereBigBinary(&B);
+    libereBigBinary(&C);
+    libereBigBinary(&D);
+    libereBigBinary(&N);
+    libereBigBinary(&M);
+    libereBigBinary(&Z);
+    libereBigBinary(&E);
+}
+
+void testMinMaxPGCD(){
+    BigBinary A = setBB(83);
+    BigBinary B = setBB(57);
+    BigBinary C = setBB(26);
+    BigBinary D = setBB(83);
+    BigBinary Z = setBB(0);
+    BigBinary E = setBB(140);
+    BigBinary N = setBB(-13);
+    BigBinary M = setBB(100);
+
+    BigBinary min_ab = minBB(A, B);
+    BigBinary max_ab = maxBB(A, B);
+    BigBinary min_an = minBB(A, N); // min(83, -13) = -13
+    
+    printf("min(A, B) (min(83, 57) = 57): "); afficheBigBinary(min_ab);
+    printf("max(A, B) (max(83, 57) = 83): "); afficheBigBinary(max_ab);
+    printf("min(A, N) (min(83, -13) = -13): "); afficheBigBinary(min_an);
+    
+    libereBigBinary(&min_ab);
+    libereBigBinary(&max_ab);
+    libereBigBinary(&min_an);
+
+    // PGCD(83, 57) = 1
+    BigBinary pgcd_ab = PGCD(A, B);
+    printf("PGCD(A, B) (PGCD(83, 57) = 1): "); afficheBigBinary(pgcd_ab); 
+    libereBigBinary(&pgcd_ab);
+
+    // PGCD(100, 26) = 2
+    BigBinary pgcd_mc = PGCD(M, C);
+    printf("PGCD(M, C) (PGCD(100, 26) = 2): "); afficheBigBinary(pgcd_mc);
+    libereBigBinary(&pgcd_mc);
+    
+    // PGCD(140, 26) = 2
+    BigBinary pgcd_dc = PGCD(D, C);
+    printf("PGCD(D, C) (PGCD(140, 26) = 2): "); afficheBigBinary(pgcd_dc);
+    libereBigBinary(&pgcd_dc);
+
+    libereBigBinary(&A);
+    libereBigBinary(&B);
+    libereBigBinary(&C);
+    libereBigBinary(&D);
+    libereBigBinary(&N);
+    libereBigBinary(&M);
+    libereBigBinary(&Z);
+    libereBigBinary(&E);
+}
+
+void testBBtoInt(){
+    BigBinary A = setBB(83);
+    BigBinary B = setBB(57);
+    BigBinary C = setBB(26);
+    BigBinary D = setBB(83);
+    BigBinary Z = setBB(0);
+    BigBinary E = setBB(140);
+    BigBinary N = setBB(-13);
+    BigBinary M = setBB(100);
+
+     int int_a = BBtoInt(A);
+    int int_b = BBtoInt(B);
+    int int_n = BBtoInt(N);
+    int int_z = BBtoInt(Z);
+
+    printf("BBtoInt(A) (83) : %d\n", int_a);
+    printf("BBtoInt(B) (57) : %d\n", int_b);
+    printf("BBtoInt(N) (-13) : %d\n", int_n);
+    printf("BBtoInt(Z) (0) : %d\n", int_z);
+
+    libereBigBinary(&A);
+    libereBigBinary(&B);
+    libereBigBinary(&C);
+    libereBigBinary(&D);
+    libereBigBinary(&N);
+    libereBigBinary(&M);
+    libereBigBinary(&Z);
+    libereBigBinary(&E);
+}
+
+void testModulo(){
+    BigBinary A = setBB(83);
+    BigBinary B = setBB(57);
+    BigBinary C = setBB(26);
+    BigBinary D = setBB(83);
+    BigBinary Z = setBB(0);
+    BigBinary E = setBB(140);
+    BigBinary N = setBB(-13);
+    BigBinary M = setBB(100);
+
+    // Modulo(83, 57) = 26
+    BigBinary mod_ab = Modulo(A, B);
+    printf("Modulo(A, B) (83 %% 57 = 26): "); afficheBigBinary(mod_ab);
+    libereBigBinary(&mod_ab);
+    
+    // Modulo(100, 26) = 22
+    BigBinary mod_mc = Modulo(M, C);
+    printf("Modulo(M, C) (100 %% 26 = 22): "); afficheBigBinary(mod_mc);
+    libereBigBinary(&mod_mc);
+
+    // Modulo(26, 83) = 26
+    BigBinary mod_ca = Modulo(C, A);
+    printf("Modulo(C, A) (26 %% 83 = 26): "); afficheBigBinary(mod_ca);
+    libereBigBinary(&mod_ca);
+
+    libereBigBinary(&A);
+    libereBigBinary(&B);
+    libereBigBinary(&C);
+    libereBigBinary(&D);
+    libereBigBinary(&N);
+    libereBigBinary(&M);
+    libereBigBinary(&Z);
+    libereBigBinary(&E);
+}
+
+void testEgypt(){
+    BigBinary A = setBB(83);
+    BigBinary B = setBB(57);
+    BigBinary C = setBB(26);
+    BigBinary D = setBB(83);
+    BigBinary Z = setBB(0);
+    BigBinary E = setBB(140);
+    BigBinary N = setBB(-13);
+    BigBinary M = setBB(100);
+
+    // 5 * 13 = 65
+    BigBinary T13 = setBB(13);
+    BigBinary T5 = setBB(5);
+    BigBinary mult_13_5 = MultiplicationEgyptienne(T13, T5);
+    printf("13 * 5 = 65: "); afficheBigBinary(mult_13_5);
+    libereBigBinary(&mult_13_5);
+    
+    // 83 * 57 = 4731
+    BigBinary mult_ab = MultiplicationEgyptienne(A, B);
+    printf("A * B (83 * 57 = 4731): "); afficheBigBinary(mult_ab);
+    libereBigBinary(&mult_ab);
+
+    // -13 * 5 = -65
+    BigBinary mult_n_5 = MultiplicationEgyptienne(N, T5);
+    printf("N * 5 (-13 * 5 = -65): "); afficheBigBinary(mult_n_5);
+    libereBigBinary(&mult_n_5);
+
+    libereBigBinary(&A);
+    libereBigBinary(&B);
+    libereBigBinary(&C);
+    libereBigBinary(&D);
+    libereBigBinary(&N);
+    libereBigBinary(&M);
+    libereBigBinary(&Z);
+    libereBigBinary(&E);
+}
+
+int main () {
+
+    //testAfficheBigBinary();
+    //testEgalInf();
+    //testAddSub();
+    //testMinMaxPGCD(); //erreur
+    //testBBtoInt(); //erreur
+    //testModulo();
+    testEgypt();
 
     return 0;
 }
