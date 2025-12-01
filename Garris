@@ -1,0 +1,332 @@
+#include <stdio.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+# define BASE 2
+
+typedef struct {
+    int * Tdigits;
+    int Taille;
+    int Signe;
+} BigBinary;
+
+//  Fonctions secondaires données
+
+BigBinary createBigBinary(int size) {
+    BigBinary bb;
+    bb.Tdigits = malloc(sizeof(int) * size) ;
+    bb.Taille = size ;
+    bb.Signe = 0;       // Nul par défaut
+    return bb ;
+}
+
+BigBinary initBigBinary (int taille , int signe) {
+    BigBinary nb;
+    nb.Taille = taille;
+    nb.Signe = signe;
+    nb.Tdigits = malloc ( sizeof (int) * taille );
+    for (int i = 0; i < taille ; ++i) {
+        nb . Tdigits [i] = 0;
+    }
+    return nb;
+}
+
+void afficheBigBinary (BigBinary nb) {
+    if (nb.Signe == -1) printf ("-");
+    if (nb.Signe == 0 || nb.Taille == 0) {
+        printf ( "0\n");
+        return;
+        }
+    for (int i = 0; i < nb.Taille ; ++i) {
+        printf ("%d", nb.Tdigits [i]);
+        }
+    printf ("\n");
+}
+
+void libereBigBinary (BigBinary *nb) {
+    free (nb -> Tdigits);
+    nb -> Tdigits = NULL;
+    nb -> Taille = 0;
+    nb -> Signe = 0;
+}
+
+BigBinary creerBigBinaryDepuisChaine(const char *chaine) {
+    BigBinary nb;
+    int n = strlen(chaine);
+    nb.Taille = 0;
+    // Compte uniquement les caractères valides (’0’ ou ’1’)
+    for (int i = 0; i < n; ++i) {
+        if (chaine[i] == '0' || chaine[i] == '1') {
+            nb.Taille++;
+        }
+    }
+    nb.Tdigits = malloc(sizeof(int) * nb.Taille);
+    nb.Signe = +1;
+    int index = 0;
+    int tousZeros = 1;
+    for (int i = 0; i < n; ++i) {
+        if (chaine[i] == '0' || chaine[i] == '1') {
+            nb.Tdigits[index] = chaine[i] - '0';
+            if (nb.Tdigits[index] == 1) tousZeros = 0;
+            index++;
+        }
+    }
+    if (tousZeros) nb.Signe = 0;
+    return nb;
+}
+
+// Fonctions secondaires supplémentaires - Première phase
+
+BigBinary Normalise(BigBinary a) {
+    if (a.Signe == 0) {
+        return a;
+    }
+    BigBinary b;
+    if (a.Tdigits[0] != 1) {
+        b = createBigBinary(a.Taille-1);      // Tableau de transtion
+        b.Signe = a.Signe;
+        for (int i=b.Taille-1; i>=0; i--) {
+            b.Tdigits[i] = a.Tdigits[i+1];
+        }
+        return Normalise(b);                       // Au cas où il y aurait plusieurs 0 au début
+    }
+    return a;
+}       // Enlève les 0 inutiles en début de BigBinary
+
+BigBinary setBB (int a) {
+    int temp = abs(a);
+    int t = 0;
+    while (temp != 0) {
+        t += 1;
+        temp /= 2;
+    }
+
+    BigBinary A = createBigBinary(t);
+    if (a == 0) {
+        return A;
+    }
+    if (a < 0) {
+        A.Signe = -1;
+    } else {
+        A.Signe = 1;
+    }
+
+    temp = abs(a);
+    while (t >= 0) {
+        A.Tdigits[--t] = temp%2;
+        temp /= 2;
+    }
+    return A;
+}               // Transforme un int en BigBinary
+
+// Fonctions secondaires demandées - Première Phase
+
+void divisePar2(BigBinary * nb) {
+    if (nb -> Signe != 0) {
+        nb -> Taille -= 1;
+        if (nb -> Taille == 0) {
+            nb -> Signe = 0;
+        } /* else {                         // Source de bugs
+            BigBinary t = createBigBinary(nb -> Taille);
+            t.Signe = nb -> Signe;
+            for (int i=0; i<=t.Taille-1; i++) {
+                t.Tdigits[i] = nb -> Tdigits[i+1];
+            }
+            free(nb -> Tdigits);
+            nb -> Tdigits = malloc(sizeof(int) * nb -> Taille);
+            for (int i=0; i<=nb -> Taille-1; i++) {
+                nb -> Tdigits[i] = t.Tdigits[i];
+            }
+            libereBigBinary(&t);
+        } */
+    }
+}
+
+BigBinary Addition(BigBinary a, BigBinary b) {      // Différents cas de base
+    if (a.Taille<b.Taille) {                // Assure que a est plus grand que b
+        return Addition(b,a);
+    }
+    if (a.Signe == 0) {
+        return b;
+    }
+    if (b.Signe == 0) {
+        return a;
+    }
+    BigBinary s;
+    s = createBigBinary(a.Taille+1);
+    s.Signe = 1;
+    int sui = 0;        // Garde en mémoire l'incrément (de l'étape suivante) et la valeur à ajouter
+    int i = 1;
+    while (i<=b.Taille) {
+        sui = sui+a.Tdigits[a.Taille-i]+b.Tdigits[b.Taille-i];
+        s.Tdigits[s.Taille-i] = sui%2;
+        sui /= 2;
+        i++;
+    }
+    while (sui!= 0 && i<=a.Taille) {
+        sui = sui+a.Tdigits[a.Taille-i];
+        s.Tdigits[s.Taille-i] = sui%2;
+        sui /= 2;
+        i++;
+    }
+    while (i <= a.Taille) {
+        s.Tdigits[s.Taille-i]=a.Tdigits[a.Taille-i];
+        i++;
+    }
+    if (sui != 0) {
+        s.Tdigits[s.Taille-i] = sui;
+    }
+    return Normalise(s);
+}
+
+BigBinary Soustraction(BigBinary a, BigBinary b) {
+    if (b.Signe == 0) {
+        return a;
+    }
+    BigBinary s;
+    s = createBigBinary(a.Taille);
+    s.Signe = 1;
+    int sui = 0;        // Garde en mémoire l'incrément (de l'étape suivante) et la valeur à ajouter
+    int i = 1;
+    while (i<=b.Taille) {
+        sui = a.Tdigits[a.Taille-i]-b.Tdigits[b.Taille-i]-sui;
+        if (sui < 0) {
+            s.Tdigits[s.Taille-i] = 1;
+            sui = 1;
+        }
+        else {
+            s.Tdigits[s.Taille-i] = sui;
+            sui = 0;
+        }
+        i++;
+    }
+    while (sui!= 0 && i<=a.Taille) {
+        sui = a.Tdigits[a.Taille-i]-sui;
+        if (sui < 0) {
+            s.Tdigits[s.Taille-i] = 1;
+            sui = 1;
+        }
+        else {
+            s.Tdigits[s.Taille-i] = sui;
+            sui = 0;
+        }
+        i++;
+    }
+    while (i <= a.Taille) {
+        s.Tdigits[s.Taille-i]=a.Tdigits[a.Taille-i];
+        i++;
+    }
+    return Normalise(s);
+}
+
+bool Egal(BigBinary a, BigBinary b) {
+    if (a.Signe != b.Signe || a.Taille != b.Taille) {
+        return false;
+    }
+    for (int i=a.Taille-1; i>=0; i--) {
+        if (a.Tdigits[i] != b.Tdigits[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool Inferieur(BigBinary a, BigBinary b) {
+    if (a.Signe > b.Signe || a.Taille > b.Taille) {
+        return false;
+    }
+    if (a.Taille < b.Taille) {
+        return true;
+    }
+    int i = 0;
+    while (i < b.Taille && a.Tdigits[i] == b.Tdigits[i]) {
+        i++;
+    }
+    if (i == b.Taille) {
+        return false;       // Dans ce cas, a = b
+    }
+    return a.Tdigits[i] < b.Tdigits[i] ? true : false;
+}
+
+// Fonction secondaire de qol - Deuxième phase
+
+BigBinary multipliePar2(BigBinary a) {
+    return Addition(a,a);
+}
+
+// Fonctions demandées - Deuxième phase
+
+BigBinary BigBinary_PGCD(BigBinary A, BigBinary B) {
+    if (Inferieur(A, B)) {
+        return BigBinary_PGCD(B, A);
+    }
+    if (B.Signe == 0 || Egal(A,B)) {
+        return A;
+    }
+    if (A.Tdigits[A.Taille-1] == 0) {
+        divisePar2(&A);
+        if (B.Tdigits[B.Taille-1] == 0) {
+            divisePar2(&B);
+            BigBinary C = BigBinary_PGCD(A, B);
+            return multipliePar2(C);
+        }
+        return BigBinary_PGCD(A,B);
+    }
+    if (B.Tdigits[B.Taille-1] == 0) {
+        divisePar2(&B);
+        return BigBinary_PGCD(A, B);
+    }
+    return BigBinary_PGCD(Soustraction(A,B), B);
+}
+
+BigBinary BigBinary_Mod(BigBinary A, BigBinary B) {
+    BigBinary tempA;
+    if (Egal(A,B)) {
+        tempA = createBigBinary(0);
+        return tempA;
+    }
+    if (Inferieur(A, B)) {
+        return A;
+    }
+
+    BigBinary tempB = multipliePar2(B);
+    if (Inferieur(A,tempB)) {
+        return Soustraction(A,B);
+    }
+
+    while (!Inferieur(A, tempB)) {
+        tempB = multipliePar2(tempB);
+    }
+    divisePar2(&tempB);
+    tempA = Soustraction(A,tempB);
+    return BigBinary_Mod(tempA, tempB);
+}
+
+BigBinary BigBinary_Egypt(BigBinary A, BigBinary B) {
+    BigBinary Somme = initBigBinary(1,0);
+    BigBinary tempM = A;                        // Valeur locale de A
+    if (A.Signe == 0 || B.Signe == 0) {
+        return Somme;
+    }
+    for (int i = B.Taille-1; i>=0; i--) {
+        if (B.Tdigits[i] == 1) {
+            Somme = Addition(Somme, tempM);
+        }
+        tempM = multipliePar2(tempM);
+    }
+    return Somme;
+}
+
+BigBinary BigBinary_expMod(BigBinary M, unsigned int exp, BigBinary mod) {
+    BigBinary Exp = setBB(1);
+    BigBinary tempM = BigBinary_Mod(M,mod);
+    while (exp > 0) {
+        if (exp % 2 == 1) {
+            Exp = BigBinary_Egypt(Exp, tempM);
+        }
+        exp = exp/2;
+        tempM = BigBinary_Egypt(tempM, tempM);
+        Exp = BigBinary_Mod(Exp, mod);
+    }
+    return Exp;
+}
