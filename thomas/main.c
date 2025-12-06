@@ -69,9 +69,11 @@ BigBinary setBB(int a){
     }
 
     temp = abs(a);
-    while (t >= 0) {
+    int i = A.Taille;
+    while (i > 0) {
         A.Tdigits[--t] = temp%2;
         temp /= 2;
+        i--;
     }
     return A;
 }
@@ -114,87 +116,114 @@ void normalizeBB(BigBinary *bb){
     }
 }
 
-BigBinary Addition(BigBinary a, BigBinary b) {      // Différents cas de base
-    if (a.Taille<b.Taille) {                // Assure que a est plus grand que b
-        return Addition(b,a);
+BigBinary copieBigBinary(BigBinary src) {
+    BigBinary res = initBigBinary(src.Taille, src.Signe);
+    if (src.Taille > 0) {
+        memcpy(res.Tdigits, src.Tdigits, src.Taille * sizeof(int));
     }
-    if (a.Signe == 0) {
-        return b;
+    return res;
+}
+
+BigBinary BB_Add(BigBinary a, BigBinary b) {//addition normale
+    int max_len;
+    if (a.Taille > b.Taille) max_len=a.Taille;
+    else max_len= b.Taille;
+    int res_len = max_len + 1;
+    BigBinary res = initBigBinary(res_len, 1); 
+    int r = 0; //retenu
+
+    for (int i = 1; i <= max_len; ++i) {
+        int a_bit,b_bit;
+        if (i <= a.Taille) a_bit= a.Tdigits[a.Taille - i];
+        else a_bit = 0;
+        if (i <= b.Taille) b_bit= b.Tdigits[b.Taille - i];
+        else b_bit = 0;
+        int sum = a_bit + b_bit + r;
+        res.Tdigits[res_len - i] = sum % BASE;
+        r = sum / BASE;
     }
-    if (b.Signe == 0) {
-        return a;
+    res.Tdigits[0] = r;
+    normalizeBB(&res);
+    if (res.Signe != 0) res.Signe = 1;
+    return res;
+}
+
+bool Inferieur_Taille(BigBinary A, BigBinary B) { //compare la taille est pas la valeur
+    if (A.Taille < B.Taille) return true;
+    if (A.Taille > B.Taille) return false;
+
+    for (int i = 0; i < A.Taille; ++i) {
+        if (A.Tdigits[i] < B.Tdigits[i]) return true;
+        if (A.Tdigits[i] > B.Tdigits[i]) return false;
     }
-    BigBinary s;
-    s = createBigBinary(a.Taille+1);
-    s.Signe = 1;
-    int sui = 0;        // Garde en mémoire l'incrément (de l'étape suivante) et la valeur à ajouter
-    int i = 1;
-    while (i<=b.Taille) {
-        sui = sui+a.Tdigits[a.Taille-i]+b.Tdigits[b.Taille-i];
-        s.Tdigits[s.Taille-i] = sui%2;
-        sui /= 2;
-        i++;
+    return false;
+}
+
+BigBinary BB_Add2(BigBinary a, BigBinary b) { //addition pour les signe diff
+    if (Inferieur_Taille(a, b)) return initBigBinary(1, 0); 
+    
+    int max_len = a.Taille;
+    BigBinary C = initBigBinary(max_len, 1);
+    int borrow = 0; 
+
+    for (int i = 1; i <= max_len; ++i) {
+        int a_bit = a.Tdigits[a.Taille - i];
+        int b_bit = (i <= b.Taille) ? b.Tdigits[b.Taille - i] : 0;
+        int diff = a_bit - b_bit - borrow;
+        
+        if (diff < 0) {
+            C.Tdigits[max_len - i] = diff + BASE;
+            borrow = 1;
+        } else {
+            C.Tdigits[max_len - i] = diff;
+            borrow = 0;
+        }
     }
-    while (sui!= 0 && i<=a.Taille) {
-        sui = sui+a.Tdigits[a.Taille-i];
-        s.Tdigits[s.Taille-i] = sui%2;
-        sui /= 2;
-        i++;
+    normalizeBB(&C);
+    return C;
+}
+
+BigBinary Addition(BigBinary a, BigBinary b) {
+    if (a.Signe == b.Signe) { //meme signe
+        BigBinary res = BB_Add(a, b);
+        res.Signe = a.Signe;
+        return res;
     }
-    while (i <= a.Taille) {
-        s.Tdigits[s.Taille-i]=a.Tdigits[a.Taille-i];
-        i++;
+
+    BigBinary res;
+    int sign_result;
+
+    if (Inferieur_Taille(a, b)) { //signe diff
+        res = BB_Add2(b, a);
+        sign_result = b.Signe;
+    } else {
+        res = BB_Add2(a, b);
+        sign_result = a.Signe;
     }
-    if (sui != 0) {
-        s.Tdigits[s.Taille-i] = sui;
+    
+    if (res.Signe == 0) return res; 
+    else {
+        res.Signe = sign_result;
+        return res;
     }
-    normalizeBB(&s);
-    return s;
 }
 
 BigBinary Soustraction(BigBinary a, BigBinary b) {
-    if (b.Signe == 0) {
-        return a;
+    BigBinary b_prime = copieBigBinary(b);
+    
+    if (b_prime.Signe != 0) {
+        b_prime.Signe *= -1;
     }
-    BigBinary s;
-    s = createBigBinary(a.Taille);
-    s.Signe = 1;
-    int sui = 0;        // Garde en mémoire l'incrément (de l'étape suivante) et la valeur à ajouter
-    int i = 1;
-    while (i<=b.Taille) {
-        sui = a.Tdigits[a.Taille-i]-b.Tdigits[b.Taille-i]-sui;
-        if (sui < 0) {
-            s.Tdigits[s.Taille-i] = 1;
-            sui = 1;
-        }
-        else {
-            s.Tdigits[s.Taille-i] = sui;
-            sui = 0;
-        }
-        i++;
-    }
-    while (sui!= 0 && i<=a.Taille) {
-        sui = a.Tdigits[a.Taille-i]-sui;
-        if (sui < 0) {
-            s.Tdigits[s.Taille-i] = 1;
-            sui = 1;
-        }
-        else {
-            s.Tdigits[s.Taille-i] = sui;
-            sui = 0;
-        }
-        i++;
-    }
-    while (i <= a.Taille) {
-        s.Tdigits[s.Taille-i]=a.Tdigits[a.Taille-i];
-        i++;
-    }
-    normalizeBB(&s);
-    return s;
+    
+    BigBinary res = Addition(a, b_prime);
+    
+    libereBigBinary(&b_prime);
+    
+    return res;
 }
 
 bool Egal(BigBinary a,BigBinary b){
-    if ((a.Signe!=b.Signe)&&(a.Taille!=b.Taille))return false;
+    if ((a.Signe!=b.Signe||a.Taille!=b.Taille))return false;
     for (int i=0;i<a.Taille;i++){
         if(a.Tdigits[i]!=b.Tdigits[i])return false;
     }
@@ -202,12 +231,10 @@ bool Egal(BigBinary a,BigBinary b){
 }
 
 bool Inferieur(BigBinary a,BigBinary b){
-    if (a.Signe!=b.Signe||((a.Signe==0)&&(b.Signe==0))) return a.Signe<b.Signe;
-    if (a.Taille!=b.Taille) return a.Taille<b.Taille; //il faut normaliser avant
-    for (int i=1; i<a.Taille;i++){
-        if(a.Tdigits[i]!=b.Tdigits[i]) return a.Tdigits!=1; //si a=1 alors b=0 donc a>b
-    }
-    return false;//==
+    if (a.Signe!=b.Signe) return a.Signe<b.Signe;
+    if (a.Signe==0)return false;
+    if (a.Signe==1) return Inferieur_Taille(a,b);
+    return Inferieur_Taille(b,a);
 }
 
 BigBinary Multiplication(BigBinary a,int n){
@@ -216,37 +243,52 @@ BigBinary Multiplication(BigBinary a,int n){
     return res;
 }
 
+//renvoie des copie car a créer des probleme pdt les test
 BigBinary minBB(BigBinary a, BigBinary b){
-    if (Inferieur(a,b)) return a;
-    return b;
+    if (Inferieur(a,b)) return copieBigBinary(a);
+    return copieBigBinary(b);
 }
 
 BigBinary maxBB(BigBinary a,BigBinary b){
-    if (Inferieur(a,b))return b;
-    return a;
+    if (Inferieur(a,b))return copieBigBinary(b);
+    return copieBigBinary(a);
 }
 
 BigBinary PGCD(BigBinary a,BigBinary b){
-    BigBinary u=maxBB(a,b);
-    BigBinary v=minBB(a,b);
+    if (a.Signe<=0||b.Signe<=0) return initBigBinary(1,0);
+    BigBinary u=copieBigBinary(a);
+    BigBinary v=copieBigBinary(b);
     while (!Egal(u,v)){
-        if(Inferieur(v,u))u=Soustraction(u,v);
-        else v=Soustraction(v,u);
+        BigBinary res;
+        if(Inferieur(v,u)){
+            res = Soustraction(u,v);
+            libereBigBinary(&u);
+            u=res;
+        }
+        else {
+            res = Soustraction(v,u);
+            libereBigBinary(&v);
+            v=res;
+        }
     }
+    libereBigBinary(&v);
     return u;
 }
 
-int puissance(int a,int b){// pas pour les BB
-    for (int i=0;i<b;i++) a+=a;
-    return a;
+int puissance(int base,int e){// pas pour les BB
+    int res=1;
+    for (int i=0;i<e;i++) res*=base;
+    return res;
 }
 
 int BBtoInt(BigBinary a){
+    if (a.Signe==0) return 0;
     int res=0;
-    for (int i=a.Taille-1;i>0;i--){
-        if(a.Tdigits[i]==1)res+=puissance(2,a.Taille-i);
+    for (int i=a.Taille-1;i>=0;i--){
+        if (a.Tdigits[i]==1) res+=puissance(2,a.Taille-i-1);
     }
-    return res;
+    if (a.Signe==1) return res;
+    return -res;
 }
 
 BigBinary Modulo(BigBinary a,BigBinary b){
@@ -262,12 +304,17 @@ BigBinary Modulo(BigBinary a,BigBinary b){
 BigBinary MultiplicationEgyptienne(BigBinary a,BigBinary b){
     BigBinary somme = initBigBinary(a.Taille,0);
     BigBinary tmp = a;
-    for (int i=a.Taille-1;i>0;i++){
+    for (int i=a.Taille-1;i>0;i--){
         if (b.Tdigits[i]==1){
-            Addition(somme,tmp);
+            BigBinary tmp2 = somme;
+            somme = Addition(tmp2,tmp);
+            libereBigBinary(&tmp2);
         }
-        Multiplication(tmp,2);
+        BigBinary tmp3 = tmp;
+            tmp = Multiplication(tmp3,1);
+            libereBigBinary(&tmp3);
     }
+    libereBigBinary(&tmp);
     return somme;
 }
 
@@ -364,7 +411,7 @@ void testAddSub(){
     libereBigBinary(&E);
 }
 
-void testMinMaxPGCD(){
+void testMinMax(){
     BigBinary A = setBB(83);
     BigBinary B = setBB(57);
     BigBinary C = setBB(26);
@@ -386,6 +433,26 @@ void testMinMaxPGCD(){
     libereBigBinary(&max_ab);
     libereBigBinary(&min_an);
 
+    libereBigBinary(&A);
+    libereBigBinary(&B);
+    libereBigBinary(&C);
+    libereBigBinary(&D);
+    libereBigBinary(&N);
+    libereBigBinary(&M);
+    libereBigBinary(&Z);
+    libereBigBinary(&E);
+}
+
+void testPGCD(){
+    BigBinary A = setBB(83);
+    BigBinary B = setBB(57);
+    BigBinary C = setBB(26);
+    BigBinary D = setBB(83);
+    BigBinary Z = setBB(0);
+    BigBinary E = setBB(140);
+    BigBinary N = setBB(-13);
+    BigBinary M = setBB(100);
+
     // PGCD(83, 57) = 1
     BigBinary pgcd_ab = PGCD(A, B);
     printf("PGCD(A, B) (PGCD(83, 57) = 1): "); afficheBigBinary(pgcd_ab); 
@@ -393,12 +460,12 @@ void testMinMaxPGCD(){
 
     // PGCD(100, 26) = 2
     BigBinary pgcd_mc = PGCD(M, C);
-    printf("PGCD(M, C) (PGCD(100, 26) = 2): "); afficheBigBinary(pgcd_mc);
+    printf("PGCD(M, C) (PGCD(100, 26) = 2): "); afficheBigBinary(pgcd_mc); // c'est normal le résultat est en binaire
     libereBigBinary(&pgcd_mc);
     
-    // PGCD(140, 26) = 2
+    // PGCD(140, 26) = 1
     BigBinary pgcd_dc = PGCD(D, C);
-    printf("PGCD(D, C) (PGCD(140, 26) = 2): "); afficheBigBinary(pgcd_dc);
+    printf("PGCD(D, C) (PGCD(83, 26) = 1): "); afficheBigBinary(pgcd_dc);
     libereBigBinary(&pgcd_dc);
 
     libereBigBinary(&A);
@@ -518,10 +585,11 @@ int main () {
     //testAfficheBigBinary();
     //testEgalInf();
     //testAddSub();
-    //testMinMaxPGCD(); //erreur
-    //testBBtoInt(); //erreur
+    //testMinMax();
+    //testPGCD();
+    //testBBtoInt();
     //testModulo();
-    testEgypt();
+    testEgypt(); //erreur
 
     return 0;
 }
