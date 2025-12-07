@@ -237,7 +237,7 @@ bool Inferieur(BigBinary a,BigBinary b){
     return Inferieur_Taille(b,a);
 }
 
-BigBinary Multiplication(BigBinary a,int n){ //tres lent ne pas utiliser
+BigBinary Multiplication(BigBinary a,int n){ //tres lent ne pas utiliser plutot utiliser Shift surtout pour les *2
     BigBinary res = initBigBinary(a.Taille,a.Signe);
     for (int i=0;i<n;i++) {
         BigBinary tmp=res;
