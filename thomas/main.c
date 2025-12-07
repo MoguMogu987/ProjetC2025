@@ -207,12 +207,11 @@ BigBinary Addition(BigBinary a, BigBinary b) {
     }
 }
 
-BigBinary Soustraction(BigBinary a, BigBinary b) {
-    BigBinary b_prime = copieBigBinary(b);
-    if (b_prime.Signe != 0) b_prime.Signe *= -1;
-    BigBinary res = Addition(a, b_prime);
-    
-    libereBigBinary(&b_prime);
+BigBinary Soustraction(BigBinary a, BigBinary b) {// A - B == A + (-B)
+    BigBinary B = copieBigBinary(b);
+    if (B.Signe != 0) B.Signe *= -1;
+    BigBinary res = Addition(a,B);
+    libereBigBinary(&B);
     return res;
 }
 
