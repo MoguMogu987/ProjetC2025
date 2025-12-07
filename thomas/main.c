@@ -355,29 +355,28 @@ BigBinary BigBinary_Egypt(BigBinary A, BigBinary B) {
 }
 
 BigBinary BBexpMod(BigBinary M,int E,BigBinary N){
-    BigBinary mod = Modulo(M,N);
+    BigBinary Base = Modulo(M,N);
     BigBinary res=setBB(1);
     if (E==0) return res;
     while (E>0){
         if (E%2==1){
             BigBinary tmp = res;
-            BigBinary tmp2 = BigBinary_Egypt(tmp,mod);
+            BigBinary tmp2 = BigBinary_Egypt(tmp,Base);
             res=Modulo(tmp2,N);
             libereBigBinary(&tmp);
             libereBigBinary(&tmp2);
         }
-        if (E>1){
-            BigBinary tmp = mod;
-            BigBinary tmp2 = BigBinary_Egypt(tmp,mod);
-            mod=Modulo(tmp2,N);
+        if (E>1){ //changement de la base car on passe au bit suivant
+            BigBinary tmp =  Base;
+            BigBinary tmp2 = BigBinary_Egypt(tmp,Base);
+            Base=Modulo(tmp2,N);
             libereBigBinary(&tmp);
             libereBigBinary(&tmp2);
         }
         E=E/2;
     }
-    libereBigBinary(&mod);
+    libereBigBinary(&Base);
     return res;
-    
 }
 
 BigBinary RSA_Encrypt(BigBinary M, int E, BigBinary N){
