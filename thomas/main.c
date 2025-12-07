@@ -343,7 +343,9 @@ BigBinary BigBinary_Egypt(BigBinary A, BigBinary B) {
     }
     for (int i = B.Taille-1; i>=0; i--) {
         if (B.Tdigits[i] == 1) {
-            Somme = Addition(Somme, tempM);
+            BigBinary tmpSomme = Somme;
+            Somme = Addition(tmpSomme, tempM);
+            libereBigBinary(&tmpSomme);
         }
         BigBinary tmp = copieBigBinary(tempM);
         tempM = Shift(tmp);
@@ -367,7 +369,7 @@ BigBinary BBexpMod(BigBinary M,int E,BigBinary N){
         }
         if (E>1){ //changement de la base car on passe au bit suivant
             BigBinary tmp =  Base;
-            BigBinary tmp2 = BigBinary_Egypt(tmp,Base);
+            BigBinary tmp2 = BigBinary_Egypt(tmp,tmp);
             Base=Modulo(tmp2,N);
             libereBigBinary(&tmp);
             libereBigBinary(&tmp2);
