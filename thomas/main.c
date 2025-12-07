@@ -237,9 +237,13 @@ bool Inferieur(BigBinary a,BigBinary b){
     return Inferieur_Taille(b,a);
 }
 
-BigBinary Multiplication(BigBinary a,int n){
+BigBinary Multiplication(BigBinary a,int n){ //tres lent ne pas utiliser
     BigBinary res = initBigBinary(a.Taille,a.Signe);
-    for (int i=0;i<n;i++) res=Addition(res,a);
+    for (int i=0;i<n;i++) {
+        BigBinary tmp=res;
+        res=Addition(tmp,a);
+        libereBigBinary(&tmp);
+    }
     return res;
 }
 
@@ -301,21 +305,59 @@ BigBinary Modulo(BigBinary a,BigBinary b){
     if (Inferieur(a,b))return a;
 }
 
-BigBinary MultiplicationEgyptienne(BigBinary a,BigBinary b){
-    BigBinary somme = initBigBinary(a.Taille,0);
-    BigBinary tmp = a;
-    for (int i=a.Taille-1;i>0;i--){
-        if (b.Tdigits[i]==1){
+BigBinary Shift(BigBinary a){//décalle vers la gauche soit *2 en binaire
+    if (a.Signe==0)return copieBigBinary(a);
+
+    BigBinary res = initBigBinary(a.Taille+1,a.Signe);
+    for (int i=0;i<a.Taille;i++) res.Tdigits[i]=a.Tdigits[i];
+    res.Tdigits[a.Taille]=0;
+    return res;
+}
+
+BigBinary MultiplicationEgyptienne(BigBinary a,BigBinary b){//marche pas utilliser BigBinary_Egypt
+    int signe;
+    if (a.Signe==0||b.Signe==0) signe=0;
+    else signe = a.Signe*b.Signe;
+    BigBinary A= copieBigBinary(a);
+    BigBinary B = copieBigBinary(b);
+    A.Signe=1;
+    B.Signe=1;
+    BigBinary somme = initBigBinary(A.Taille+B.Taille,0);
+    BigBinary tmp = copieBigBinary(A);
+    for (int i=B.Taille-1;i>=0;i--){
+        if (B.Tdigits[i]==1){
             BigBinary tmp2 = somme;
             somme = Addition(tmp2,tmp);
             libereBigBinary(&tmp2);
         }
-        BigBinary tmp3 = tmp;
-            tmp = Multiplication(tmp3,1);
-            libereBigBinary(&tmp3);
+        BigBinary tmp3 = copieBigBinary(tmp);
+        //tmp = Multiplication(tmp3,2);
+        tmp=Shift(tmp3);
+        libereBigBinary(&tmp3);
     }
     libereBigBinary(&tmp);
+    libereBigBinary(&A);
+    libereBigBinary(&B);
+    somme.Signe=signe;
     return somme;
+}
+
+BigBinary BigBinary_Egypt(BigBinary A, BigBinary B) {
+    BigBinary Somme = initBigBinary(1,0);
+    BigBinary tempM = copieBigBinary(A);                        // Valeur locale de A
+    if (A.Signe == 0 || B.Signe == 0) {
+        return Somme;
+    }
+    for (int i = B.Taille-1; i>=0; i--) {
+        if (B.Tdigits[i] == 1) {
+            Somme = Addition(Somme, tempM);
+        }
+        BigBinary tmp = copieBigBinary(tempM);
+        tempM = Shift(tmp);
+        libereBigBinary(&tmp);
+    }
+    libereBigBinary(&tempM);
+    return Somme;
 }
 
 //fonction de test
@@ -556,20 +598,25 @@ void testEgypt(){
     // 5 * 13 = 65
     BigBinary T13 = setBB(13);
     BigBinary T5 = setBB(5);
-    BigBinary mult_13_5 = MultiplicationEgyptienne(T13, T5);
+    //BigBinary mult_13_5 = MultiplicationEgyptienne(T13, T5);
+    BigBinary mult_13_5 = BigBinary_Egypt(T13, T5);
     printf("13 * 5 = 65: "); afficheBigBinary(mult_13_5);
     libereBigBinary(&mult_13_5);
     
     // 83 * 57 = 4731
-    BigBinary mult_ab = MultiplicationEgyptienne(A, B);
+    //BigBinary mult_ab = MultiplicationEgyptienne(A, B);
+    BigBinary mult_ab = BigBinary_Egypt(A, B);
     printf("A * B (83 * 57 = 4731): "); afficheBigBinary(mult_ab);
     libereBigBinary(&mult_ab);
 
     // -13 * 5 = -65
-    BigBinary mult_n_5 = MultiplicationEgyptienne(N, T5);
+    //BigBinary mult_n_5 = MultiplicationEgyptienne(N, T5);
+    BigBinary mult_n_5 = BigBinary_Egypt(N, T5);
     printf("N * 5 (-13 * 5 = -65): "); afficheBigBinary(mult_n_5);
     libereBigBinary(&mult_n_5);
 
+    libereBigBinary(&T13);
+    libereBigBinary(&T5);
     libereBigBinary(&A);
     libereBigBinary(&B);
     libereBigBinary(&C);
@@ -589,7 +636,7 @@ int main () {
     //testPGCD();
     //testBBtoInt();
     //testModulo();
-    testEgypt(); //erreur
+    //testEgypt();
 
     return 0;
 }
