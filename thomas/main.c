@@ -260,23 +260,23 @@ BigBinary maxBB(BigBinary a,BigBinary b){
 
 BigBinary PGCD(BigBinary a,BigBinary b){
     if (a.Signe<=0||b.Signe<=0) return initBigBinary(1,0);
-    BigBinary u=copieBigBinary(a);
-    BigBinary v=copieBigBinary(b);
-    while (!Egal(u,v)){
+    BigBinary A=copieBigBinary(a);
+    BigBinary B=copieBigBinary(b);
+    while (!Egal(A,B)){
         BigBinary res;
-        if(Inferieur(v,u)){
-            res = Soustraction(u,v);
-            libereBigBinary(&u);
-            u=res;
+        if(Inferieur(B,A)){
+            res = Soustraction(A,B);
+            libereBigBinary(&A);
+            A=res;
         }
         else {
-            res = Soustraction(v,u);
-            libereBigBinary(&v);
-            v=res;
+            res = Soustraction(B,A);
+            libereBigBinary(&B);
+            B=res;
         }
     }
-    libereBigBinary(&v);
-    return u;
+    libereBigBinary(&B);
+    return A;
 }
 
 int puissance(int base,int e){// pas pour les BB
