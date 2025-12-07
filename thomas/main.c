@@ -312,7 +312,7 @@ BigBinary Modulo(BigBinary a,BigBinary b){
     while (Inferieur_Taille(b,res)||Egal(res,b)){
         BigBinary tmp = copieBigBinary(b);
         BigBinary next;
-        while (true) {
+        while (true) { //cherche a soustraire le plus grand possible
             next = Shift(tmp);
             if (Inferieur(next, res) || Egal(next, res)) {
                 libereBigBinary(&tmp);
@@ -688,9 +688,9 @@ void testEgypt(){
 }
 
 void testRSA(){
-    BigBinary N = setBB(323); 
-    int e = 17; //e = d il faut qu'il ait la meme clé de décriptage
-    int d = 17;
+    BigBinary N = setBB(187); 
+    int e = 7; //e = d il faut qu'il ait la meme clé de décriptage
+    int d = 23;
 
     BigBinary M = setBB(123); 
     printf("Message M (123): "); afficheBigBinary(M);
@@ -718,7 +718,7 @@ int main () {
     //testPGCD();
     //testBBtoInt();
     //testModulo();
-    testEgypt();
+    //testEgypt();
     testRSA();
 
     return 0;
