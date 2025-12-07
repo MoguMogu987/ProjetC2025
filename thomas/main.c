@@ -389,20 +389,20 @@ BigBinary BBexpMod(BigBinary M,int E,BigBinary N){
     if (E==0) return res;
     while (E>0){
         if (E%2==1){
-            BigBinary ancienneRes = res;
-            BigBinary tmp = BigBinary_Egypt(ancienneRes,Base);
+            BigBinary old_res = res;
+            BigBinary tmp = BigBinary_Egypt(old_res,Base);
             BigBinary tmp2=Modulo(tmp,N);
             res=tmp2;
-            libereBigBinary(&ancienneRes);
+            libereBigBinary(&old_res);
             libereBigBinary(&tmp);
             //libereBigBinary(&tmp2);
         }
         if (E>1){ //changement de la base car on passe au bit suivant
             BigBinary tmp =  copieBigBinary(Base);
             BigBinary tmp2 = BigBinary_Egypt(tmp,tmp);
-            BigBinary ancienneBase = Base;
+            BigBinary old_Base = Base;
             Base=Modulo(tmp2,N);
-            libereBigBinary(&ancienneBase);
+            libereBigBinary(&old_Base);
             libereBigBinary(&tmp);
             libereBigBinary(&tmp2);
         }
