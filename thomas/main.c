@@ -311,14 +311,14 @@ BigBinary Modulo(BigBinary a,BigBinary b){
     BigBinary next;
     while (Inferieur_Taille(b,res)||Egal(res,b)){
         BigBinary tmp = copieBigBinary(b);
-        BigBinary next_shifted_b;
+        BigBinary next;
         while (true) {
-            next_shifted_b = Shift(tmp); // Calcule shifted_b * 2
-            if (Inferieur(next_shifted_b, res) || Egal(next_shifted_b, res)) {
-                libereBigBinary(&tmp); // Libère l'ancienne allocation
-                tmp = next_shifted_b;
+            next = Shift(tmp);
+            if (Inferieur(next, res) || Egal(next, res)) {
+                libereBigBinary(&tmp);
+                tmp = next;
             } else {
-                libereBigBinary(&next_shifted_b);
+                libereBigBinary(&next);
                 break;
             }
         }
