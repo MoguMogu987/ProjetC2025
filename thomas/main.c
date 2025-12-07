@@ -689,7 +689,7 @@ void testEgypt(){
 
 void testRSA(){
     BigBinary N = setBB(187); 
-    int e = 7; //e = d il faut qu'il ait la meme clé de décriptage
+    int e = 7;
     int d = 23;
 
     BigBinary M = setBB(123); 
