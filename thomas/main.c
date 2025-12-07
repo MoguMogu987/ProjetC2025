@@ -182,7 +182,7 @@ BigBinary BB_Add2(BigBinary a, BigBinary b) { //addition pour les signe diff
         }
         if (res.Tdigits[max_len-i]==1) is_null=false;
     }
-    if(is_null){
+    if(is_null){// si a - b = 0
         libereBigBinary(&res);
         return initBigBinary(1,0);
     }
