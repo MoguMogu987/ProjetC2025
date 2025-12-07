@@ -416,8 +416,8 @@ BigBinary RSA_Encrypt(BigBinary M, int E, BigBinary N){
     return BBexpMod(M,E,N);
 }
 
-BigBinary RSA_Decrypt(BigBinary M, int D, BigBinary N){
-    return BBexpMod(M,D,N);
+BigBinary RSA_Decrypt(BigBinary C, int D, BigBinary N){
+    return BBexpMod(C,D,N);
 }
 
 //fonction de test
