@@ -163,24 +163,31 @@ BigBinary BB_Add2(BigBinary a, BigBinary b) { //addition pour les signe diff
     if (Inferieur_Taille(a, b)) return initBigBinary(1, 0); 
     
     int max_len = a.Taille;
-    BigBinary C = initBigBinary(max_len, 1);
-    int borrow = 0; 
+    BigBinary res = initBigBinary(max_len, 1);
+    int r = 0; 
+    bool is_null=true;
 
     for (int i = 1; i <= max_len; ++i) {
         int a_bit = a.Tdigits[a.Taille - i];
-        int b_bit = (i <= b.Taille) ? b.Tdigits[b.Taille - i] : 0;
-        int diff = a_bit - b_bit - borrow;
-        
+        int b_bit;
+        if (i <= b.Taille) b_bit = b.Tdigits[b.Taille - i];
+        else b_bit = 0;
+        int diff = a_bit-b_bit-r;
         if (diff < 0) {
-            C.Tdigits[max_len - i] = diff + BASE;
-            borrow = 1;
+            res.Tdigits[max_len-i] = diff+BASE;
+            r = 1;
         } else {
-            C.Tdigits[max_len - i] = diff;
-            borrow = 0;
+            res.Tdigits[max_len-i] = diff;
+            r = 0;
         }
+        if (res.Tdigits[max_len-i]==1) is_null=false;
     }
-    normalizeBB(&C);
-    return C;
+    if(is_null){
+        libereBigBinary(&res);
+        return initBigBinary(1,0);
+    }
+    normalizeBB(&res);
+    return res;
 }
 
 BigBinary Addition(BigBinary a, BigBinary b) {
@@ -288,22 +295,39 @@ int BBtoInt(BigBinary a){
     return -res;
 }
 
-BigBinary Modulo(BigBinary a,BigBinary b){
-    //a et b positif
-    if (Egal(a,b)) return initBigBinary(0,0);
-    if (!Inferieur(a,b))return Modulo(Soustraction(a,b),b);
-    BigBinary p = PGCD(a,b);
-    if (!Inferieur(a,Multiplication(b,2)))return Modulo(Soustraction(a,Multiplication(b,2)),b);
-    if (!Inferieur(a,Multiplication(b,3)))return Modulo(Soustraction(a,Multiplication(b,3)),b);
-    if (Inferieur(a,b))return a;
-}
-
 BigBinary Shift(BigBinary a){//décalle vers la gauche soit *2 en binaire
     if (a.Signe==0)return copieBigBinary(a);
 
     BigBinary res = initBigBinary(a.Taille+1,a.Signe);
     for (int i=0;i<a.Taille;i++) res.Tdigits[i]=a.Tdigits[i];
     res.Tdigits[a.Taille]=0;
+    return res;
+}
+
+BigBinary Modulo(BigBinary a,BigBinary b){
+    //a et b positif
+    if (a.Signe <= 0|| b.Signe<=0)return initBigBinary(1,0);
+    BigBinary res = copieBigBinary(a);
+    BigBinary next;
+    while (Inferieur_Taille(b,res)||Egal(res,b)){
+        BigBinary tmp = copieBigBinary(b);
+        BigBinary next_shifted_b;
+        while (true) {
+            next_shifted_b = Shift(tmp); // Calcule shifted_b * 2
+            if (Inferieur(next_shifted_b, res) || Egal(next_shifted_b, res)) {
+                libereBigBinary(&tmp); // Libère l'ancienne allocation
+                tmp = next_shifted_b;
+            } else {
+                libereBigBinary(&next_shifted_b);
+                break;
+            }
+        }
+        BigBinary tmp2 = res;
+        res = Soustraction(tmp2,tmp); // res = res-b*2^k
+        libereBigBinary(&tmp2);
+        libereBigBinary(&tmp);
+    }
+    normalizeBB(&res);
     return res;
 }
 
@@ -339,6 +363,7 @@ BigBinary BigBinary_Egypt(BigBinary A, BigBinary B) {
     BigBinary Somme = initBigBinary(1,0);
     BigBinary tempM = copieBigBinary(A);                        // Valeur locale de A
     if (A.Signe == 0 || B.Signe == 0) {
+        libereBigBinary(&tempM);
         return Somme;
     }
     for (int i = B.Taille-1; i>=0; i--) {
@@ -347,11 +372,14 @@ BigBinary BigBinary_Egypt(BigBinary A, BigBinary B) {
             Somme = Addition(tmpSomme, tempM);
             libereBigBinary(&tmpSomme);
         }
-        BigBinary tmp = copieBigBinary(tempM);
-        tempM = Shift(tmp);
-        libereBigBinary(&tmp);
+        BigBinary old_tempM = tempM;
+        BigBinary tmp2 = Shift(old_tempM);
+        libereBigBinary(&old_tempM);
+        tempM=tmp2;
+        
     }
     libereBigBinary(&tempM);
+    Somme.Signe=A.Signe*B.Signe;
     return Somme;
 }
 
@@ -361,16 +389,20 @@ BigBinary BBexpMod(BigBinary M,int E,BigBinary N){
     if (E==0) return res;
     while (E>0){
         if (E%2==1){
-            BigBinary tmp = res;
-            BigBinary tmp2 = BigBinary_Egypt(tmp,Base);
-            res=Modulo(tmp2,N);
+            BigBinary ancienneRes = res;
+            BigBinary tmp = BigBinary_Egypt(ancienneRes,Base);
+            BigBinary tmp2=Modulo(tmp,N);
+            res=tmp2;
+            libereBigBinary(&ancienneRes);
             libereBigBinary(&tmp);
-            libereBigBinary(&tmp2);
+            //libereBigBinary(&tmp2);
         }
         if (E>1){ //changement de la base car on passe au bit suivant
-            BigBinary tmp =  Base;
+            BigBinary tmp =  copieBigBinary(Base);
             BigBinary tmp2 = BigBinary_Egypt(tmp,tmp);
+            BigBinary ancienneBase = Base;
             Base=Modulo(tmp2,N);
+            libereBigBinary(&ancienneBase);
             libereBigBinary(&tmp);
             libereBigBinary(&tmp2);
         }
@@ -384,8 +416,8 @@ BigBinary RSA_Encrypt(BigBinary M, int E, BigBinary N){
     return BBexpMod(M,E,N);
 }
 
-BigBinary RSA_Decrypt(BigBinary M, int E, BigBinary N){
-    return BBexpMod(M,E,N);
+BigBinary RSA_Decrypt(BigBinary M, int D, BigBinary N){
+    return BBexpMod(M,D,N);
 }
 
 //fonction de test
@@ -657,8 +689,8 @@ void testEgypt(){
 
 void testRSA(){
     BigBinary N = setBB(323); 
-    int e = 17;
-    int d = 209;
+    int e = 17; //e = d il faut qu'il ait la meme clé de décriptage
+    int d = 17;
 
     BigBinary M = setBB(123); 
     printf("Message M (123): "); afficheBigBinary(M);
@@ -686,7 +718,7 @@ int main () {
     //testPGCD();
     //testBBtoInt();
     //testModulo();
-    //testEgypt();
+    testEgypt();
     testRSA();
 
     return 0;
