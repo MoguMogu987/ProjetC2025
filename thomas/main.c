@@ -189,7 +189,6 @@ BigBinary Addition(BigBinary a, BigBinary b) {
         res.Signe = a.Signe;
         return res;
     }
-
     BigBinary res;
     int sign_result;
 
@@ -210,15 +209,10 @@ BigBinary Addition(BigBinary a, BigBinary b) {
 
 BigBinary Soustraction(BigBinary a, BigBinary b) {
     BigBinary b_prime = copieBigBinary(b);
-    
-    if (b_prime.Signe != 0) {
-        b_prime.Signe *= -1;
-    }
-    
+    if (b_prime.Signe != 0) b_prime.Signe *= -1;
     BigBinary res = Addition(a, b_prime);
     
     libereBigBinary(&b_prime);
-    
     return res;
 }
 
@@ -358,6 +352,40 @@ BigBinary BigBinary_Egypt(BigBinary A, BigBinary B) {
     }
     libereBigBinary(&tempM);
     return Somme;
+}
+
+BigBinary BBexpMod(BigBinary M,int E,BigBinary N){
+    BigBinary mod = Modulo(M,N);
+    BigBinary res=setBB(1);
+    if (E==0) return res;
+    while (E>0){
+        if (E%2==1){
+            BigBinary tmp = res;
+            BigBinary tmp2 = BigBinary_Egypt(tmp,mod);
+            res=Modulo(tmp2,N);
+            libereBigBinary(&tmp);
+            libereBigBinary(&tmp2);
+        }
+        if (E>1){
+            BigBinary tmp = mod;
+            BigBinary tmp2 = BigBinary_Egypt(tmp,mod);
+            mod=Modulo(tmp2,N);
+            libereBigBinary(&tmp);
+            libereBigBinary(&tmp2);
+        }
+        E=E/2;
+    }
+    libereBigBinary(&mod);
+    return res;
+    
+}
+
+BigBinary RSA_Encrypt(BigBinary M, int E, BigBinary N){
+    return BBexpMod(M,E,N);
+}
+
+BigBinary RSA_Decrypt(BigBinary M, int E, BigBinary N){
+    return BBexpMod(M,E,N);
 }
 
 //fonction de test
@@ -627,6 +655,28 @@ void testEgypt(){
     libereBigBinary(&E);
 }
 
+void testRSA(){
+    BigBinary N = setBB(323); 
+    int e = 17;
+    int d = 209;
+
+    BigBinary M = setBB(123); 
+    printf("Message M (123): "); afficheBigBinary(M);
+    
+    BigBinary C = RSA_Encrypt(M, e, N);
+    printf("Chiffre C (M^e mod N): "); afficheBigBinary(C);
+
+    BigBinary M_prime = RSA_Decrypt(C, d, N);
+    printf("Dechiffre M' (C^d mod N): "); afficheBigBinary(M_prime);
+
+    printf("Chiffrement/Déchiffrement réussi : %s\n", Egal(M, M_prime) ? "true" : "false");
+
+    libereBigBinary(&N);
+    libereBigBinary(&M);
+    libereBigBinary(&C);
+    libereBigBinary(&M_prime);
+}
+
 int main () {
 
     //testAfficheBigBinary();
@@ -637,6 +687,7 @@ int main () {
     //testBBtoInt();
     //testModulo();
     //testEgypt();
+    testRSA();
 
     return 0;
 }
